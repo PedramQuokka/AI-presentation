@@ -73,6 +73,9 @@ const eventDetails = {
   agenda: ["Workflow overview", "Live build demo", "Figma refinement", "Q&A"],
 };
 
+const JOIN_US_LOGO_SRC = "/assets/quokka-logo.png";
+const JOIN_US_PHOTO_SRC = "/assets/join-us-photo.jpg";
+
 const fadeUp = {
   hidden: { opacity: 0, y: 34 },
   visible: {
@@ -245,7 +248,7 @@ function EventSignupPage({ onNavigateHome }) {
   };
 
   return (
-    <section className="relative z-10 flex min-h-screen items-center px-5 pb-10 pt-28 sm:px-8 lg:pt-32">
+    <section className="relative z-10 flex min-h-screen items-start px-5 pb-16 pt-28 sm:px-8 lg:pt-32">
       <motion.div
         className="mx-auto w-full max-w-5xl"
         initial={{ opacity: 0, y: 28 }}
@@ -385,8 +388,40 @@ function EventSignupPage({ onNavigateHome }) {
             </div>
           </motion.form>
         </div>
+
+        <JoinUsSection />
       </motion.div>
     </section>
+  );
+}
+
+function JoinUsSection() {
+  return (
+    <motion.article
+      className="mt-5 overflow-hidden rounded-[2rem] border border-[#25364d] bg-white/[0.03] p-5 shadow-panel-glow backdrop-blur-xl sm:p-8 lg:px-[39px] lg:py-9"
+      initial={{ opacity: 0, y: 28 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.78, delay: 0.22 }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-5">
+        <h2 className="text-4xl font-semibold leading-tight tracking-normal text-white sm:text-[40px] sm:leading-[48px]">
+          Join us
+        </h2>
+        <img
+          src={JOIN_US_LOGO_SRC}
+          alt="Digital by Quokka"
+          className="h-[42px] w-[133px] shrink-0 object-contain"
+        />
+      </div>
+
+      <div className="mt-9 aspect-[2286/1351] w-full overflow-hidden bg-ink-900">
+        <img
+          src={JOIN_US_PHOTO_SRC}
+          alt="Event attendees sitting together in an office during the AI workflow session"
+          className="relative left-0 top-[-19.17%] h-[126.94%] w-full max-w-none object-cover"
+        />
+      </div>
+    </motion.article>
   );
 }
 
