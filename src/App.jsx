@@ -5,7 +5,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const workflowSteps = [
   {
@@ -64,6 +64,15 @@ const previewCards = [
   "Stakeholder link",
 ];
 
+const SIGNUP_PATH = "/sign-up";
+
+const eventDetails = {
+  date: "Thursday, May 21, 2026",
+  summary:
+    "A compact live walkthrough of how Codex, Figma, and Vercel turn a design idea into a polished, shareable prototype.",
+  agenda: ["Workflow overview", "Live build demo", "Figma refinement", "Q&A"],
+};
+
 const fadeUp = {
   hidden: { opacity: 0, y: 34 },
   visible: {
@@ -73,7 +82,17 @@ const fadeUp = {
   },
 };
 
+function getCurrentRoute() {
+  if (typeof window === "undefined") {
+    return "home";
+  }
+
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  return pathname === SIGNUP_PATH ? "signup" : "home";
+}
+
 function App() {
+  const [route, setRoute] = useState(getCurrentRoute);
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 120,
@@ -94,6 +113,42 @@ function App() {
     return () => window.removeEventListener("pointermove", handleMove);
   }, [mouseX, mouseY]);
 
+  useEffect(() => {
+    const handleRouteChange = () => setRoute(getCurrentRoute());
+
+    window.addEventListener("popstate", handleRouteChange);
+    return () => window.removeEventListener("popstate", handleRouteChange);
+  }, []);
+
+  const scrollToSection = (sectionId) => {
+    window.setTimeout(() => {
+      const target = document.getElementById(sectionId);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 25);
+  };
+
+  const navigateHome = (event, sectionId) => {
+    event?.preventDefault();
+    const targetUrl = sectionId ? `/#${sectionId}` : "/";
+
+    window.history.pushState({}, "", targetUrl);
+    setRoute("home");
+
+    if (sectionId) {
+      scrollToSection(sectionId);
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const navigateSignup = (event) => {
+    event?.preventDefault();
+    window.history.pushState({}, "", SIGNUP_PATH);
+    setRoute("signup");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-ink-950 text-frost-100">
       <motion.div
@@ -101,17 +156,27 @@ function App() {
         style={{ scaleX }}
       />
       <AmbientField mouseX={mouseX} mouseY={mouseY} />
-      <Header />
-      <Hero />
-      <Workflow />
-      <HowIWork />
-      <Showcase />
-      <Closing />
+      <Header
+        route={route}
+        onNavigateHome={navigateHome}
+        onNavigateSignup={navigateSignup}
+      />
+      {route === "signup" ? (
+        <EventSignupPage onNavigateHome={navigateHome} />
+      ) : (
+        <>
+          <Hero />
+          <Workflow />
+          <HowIWork />
+          <Showcase />
+          <Closing />
+        </>
+      )}
     </main>
   );
 }
 
-function Header() {
+function Header({ route, onNavigateHome, onNavigateSignup }) {
   return (
     <motion.header
       className="fixed left-0 right-0 top-0 z-40 px-5 py-5 sm:px-8"
@@ -119,8 +184,8 @@ function Header() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, ease: "easeOut" }}
     >
-      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-full border border-white/10 bg-ink-950/35 px-4 py-3 text-xs text-frost-200 shadow-panel-glow backdrop-blur-xl sm:px-5">
-        <a href="#top" className="group flex items-center gap-3">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full border border-white/10 bg-ink-950/35 px-4 py-3 text-xs text-frost-200 shadow-panel-glow backdrop-blur-xl sm:px-5">
+        <a href="/" onClick={onNavigateHome} className="group flex items-center gap-3">
           <span className="grid size-8 place-items-center rounded-full border border-white/15 bg-white/[0.04] text-[10px] font-semibold tracking-[0.22em] text-nord-cyan transition-colors group-hover:border-nord-cyan/60">
             AI
           </span>
@@ -128,19 +193,200 @@ function Header() {
             UX WORKFLOW FLYER
           </span>
         </a>
-        <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-          {["Workflow", "Method", "Showcase"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase()}`}
-              className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-frost-300 transition hover:bg-white/10 hover:text-white"
-            >
-              {item}
-            </a>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 sm:flex">
+            {["Workflow", "Method", "Showcase"].map((item) => {
+              const sectionId = item.toLowerCase();
+
+              return (
+                <a
+                  key={item}
+                  href={`/#${sectionId}`}
+                  onClick={(event) => onNavigateHome(event, sectionId)}
+                  className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-frost-300 transition hover:bg-white/10 hover:text-white"
+                >
+                  {item}
+                </a>
+              );
+            })}
+          </div>
+          <a
+            href={SIGNUP_PATH}
+            onClick={onNavigateSignup}
+            className={`rounded-full border border-white/10 bg-[#0d0cec] px-4 py-3 text-[10px] uppercase tracking-[0.18em] transition hover:bg-[#2322ff] hover:text-white ${
+              route === "signup"
+                ? "text-white ring-1 ring-nord-cyan/45"
+                : "text-frost-200"
+            }`}
+          >
+            Sign up
+          </a>
         </div>
       </nav>
     </motion.header>
+  );
+}
+
+function EventSignupPage({ onNavigateHome }) {
+  const [email, setEmail] = useState("");
+  const [formStatus, setFormStatus] = useState("idle");
+  const normalizedEmail = email.trim();
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (!isEmailValid) {
+      setFormStatus("error");
+      return;
+    }
+
+    setFormStatus("success");
+  };
+
+  return (
+    <section className="relative z-10 flex min-h-screen items-center px-5 pb-10 pt-28 sm:px-8 lg:pt-32">
+      <motion.div
+        className="mx-auto w-full max-w-5xl"
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <button
+          type="button"
+          onClick={(event) => onNavigateHome(event)}
+          className="group inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2.5 text-xs font-medium uppercase tracking-[0.18em] text-frost-300 backdrop-blur transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+        >
+          <span
+            className="text-base transition group-hover:-translate-x-0.5"
+            aria-hidden="true"
+          >
+            &larr;
+          </span>
+          Back to flyer
+        </button>
+
+        <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_0.72fr] lg:items-stretch">
+          <motion.article
+            className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.045] p-6 shadow-panel-glow backdrop-blur-xl sm:p-8"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.78, delay: 0.08 }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-nord-blue/12 via-transparent to-nord-violet/10" />
+            <div className="relative">
+              <p className="mb-5 inline-flex rounded-full border border-white/12 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.24em] text-frost-300">
+                Today / Live event
+              </p>
+              <h1 className="text-balance text-4xl font-semibold leading-[1.02] tracking-normal text-white sm:text-5xl">
+                Sign up for today's AI workflow event.
+              </h1>
+
+              <div className="mt-6 rounded-[1.25rem] border border-white/10 bg-ink-900/70 p-4">
+                <span className="text-[10px] uppercase tracking-[0.22em] text-frost-400">
+                  Event date
+                </span>
+                <p className="mt-2 text-xl font-semibold text-frost-100">
+                  {eventDetails.date}
+                </p>
+              </div>
+
+              <p className="mt-6 max-w-2xl text-base font-light leading-7 text-frost-300">
+                {eventDetails.summary}
+              </p>
+
+              <div className="mt-7">
+                <p className="text-[10px] uppercase tracking-[0.24em] text-frost-400">
+                  What will happen
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {eventDetails.agenda.map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-frost-200"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.article>
+
+          <motion.form
+            className="rounded-[1.75rem] border border-nord-blue/25 bg-ink-900/80 p-6 shadow-panel-glow backdrop-blur-xl sm:p-8"
+            onSubmit={handleSubmit}
+            noValidate
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.78, delay: 0.16 }}
+          >
+            <p className="text-xs uppercase tracking-[0.28em] text-nord-cyan">
+              Reserve your spot
+            </p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-normal text-white">
+              Get the event link.
+            </h2>
+            <p className="mt-4 text-sm font-light leading-6 text-frost-300">
+              Enter your email and we will hold your place for today's session.
+            </p>
+
+            <label
+              htmlFor="signup-email"
+              className="mt-8 block text-xs uppercase tracking-[0.22em] text-frost-400"
+            >
+              Email address
+            </label>
+            <input
+              id="signup-email"
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                setFormStatus("idle");
+              }}
+              placeholder="you@example.com"
+              className="mt-3 w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-4 text-base text-white outline-none transition placeholder:text-frost-400 focus:border-nord-cyan/70 focus:bg-white/[0.07] focus:ring-4 focus:ring-nord-cyan/10"
+              aria-describedby="signup-email-status"
+            />
+
+            <button
+              type="submit"
+              className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-[#0d0cec] px-5 py-4 text-xs font-semibold uppercase tracking-[0.2em] text-white transition hover:bg-[#2322ff] focus:outline-none focus:ring-4 focus:ring-nord-blue/25"
+            >
+              Sign up
+              <span aria-hidden="true">&rarr;</span>
+            </button>
+
+            <div
+              id="signup-email-status"
+              className="mt-4 min-h-12"
+              aria-live="polite"
+            >
+              {formStatus === "success" ? (
+                <motion.p
+                  className="rounded-2xl border border-nord-moss/20 bg-nord-moss/10 px-4 py-3 text-sm leading-6 text-frost-100"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  You are signed up with {normalizedEmail}. We will send the
+                  event details shortly.
+                </motion.p>
+              ) : null}
+              {formStatus === "error" ? (
+                <motion.p
+                  className="rounded-2xl border border-[#ff6b6b]/25 bg-[#ff6b6b]/10 px-4 py-3 text-sm leading-6 text-frost-100"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  Please enter a valid email address to sign up.
+                </motion.p>
+              ) : null}
+            </div>
+          </motion.form>
+        </div>
+      </motion.div>
+    </section>
   );
 }
 
